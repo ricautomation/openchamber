@@ -172,27 +172,24 @@ export function registerTtsRoutes(app, { resolveZenModel, sayTTSCapability }) {
         return res.status(503).json({ error: 'macOS say command not available on this platform' });
       }
       
-      const { exec } = await import('child_process');
+      const { execFile } = await import('child_process');
       const { promisify } = await import('util');
       const fs = await import('fs');
       const os = await import('os');
       const path = await import('path');
-      const execAsync = promisify(exec);
+      const execFileAsync = promisify(execFile);
       
       // Create temp file for audio output (use m4a for browser compatibility)
       const tempDir = os.tmpdir();
       const tempFile = path.join(tempDir, `say-${Date.now()}.m4a`);
       
-      // Escape text for shell - escape both single quotes and double quotes
-      const escapedText = text.trim().replace(/'/g, "'\\''").replace(/"/g, '\\"');
-      
       // Generate audio file using 'say' command
       // -o outputs to file, -r sets rate (words per minute)
       // --data-format=aac outputs as m4a which browsers can decode
-      const cmd = `say -v "${voice}" -r ${rate} -o "${tempFile}" --data-format=aac '${escapedText}'`;
+      const args = ['-v', voice, '-r', rate.toString(), '-o', tempFile, '--data-format=aac', text.trim()];
       console.log('[TTS-Say] Generating speech:', { textLength: text.length, voice, rate });
       
-      await execAsync(cmd);
+      await execFileAsync('say', args);
       
       // Read the generated audio file
       const audioBuffer = await fs.promises.readFile(tempFile);
