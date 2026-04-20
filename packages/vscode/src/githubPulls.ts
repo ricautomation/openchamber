@@ -463,14 +463,16 @@ export const getPullRequestContext = async (
       if (ids.runId) runIds.add(ids.runId);
     });
 
-    for (const runId of runIds) {
+    const jobsFetchResults = await Promise.all(Array.from(runIds).map(async (runId) => {
       const jobsResp = await githubFetch(`${API_BASE}/repos/${repo.owner}/${repo.repo}/actions/runs/${runId}/jobs?per_page=100`, accessToken);
-      if (jobsResp.status === 401) {
-        return { connected: false };
-      }
+      if (jobsResp.status === 401) return { status: 401 };
       const jobsJson = await jsonOrNull<JsonRecord>(jobsResp);
       const jobs = Array.isArray(jobsJson?.jobs) ? (jobsJson?.jobs as unknown[]) : [];
       jobsByRunId.set(runId, jobs.filter((j) => j && typeof j === 'object') as JsonRecord[]);
+      return { status: jobsResp.status };
+    }));
+    if (jobsFetchResults.some((r) => r.status === 401)) {
+      return { connected: false };
     }
 
     const annotationsByRunId = new Map<number, Array<{
@@ -483,7 +485,7 @@ export const getPullRequestContext = async (
       rawDetails?: string;
     }>>();
 
-    for (const run of checkRuns) {
+    const annotationsFetchResults = await Promise.all(checkRuns.map(async (run) => {
       const runId = typeof run.id === 'number' ? run.id : 0;
       const conclusion = (run.conclusion || '').toLowerCase();
       const shouldLoadAnnotations = Boolean(
@@ -492,7 +494,7 @@ export const getPullRequestContext = async (
         && !['success', 'neutral', 'skipped'].includes(conclusion),
       );
       if (!shouldLoadAnnotations) {
-        continue;
+        return { status: 200 };
       }
 
       const annotations: Array<{
@@ -505,13 +507,16 @@ export const getPullRequestContext = async (
         rawDetails?: string;
       }> = [];
 
-      for (let page = 1; page <= 3; page += 1) {
+      const pages = [1, 2, 3];
+      let stopPaging = false;
+      for (const page of pages) {
+        if (stopPaging) break;
         const annotationsResp = await githubFetch(
           `${API_BASE}/repos/${repo.owner}/${repo.repo}/check-runs/${runId}/annotations?per_page=50&page=${page}`,
           accessToken,
         );
         if (annotationsResp.status === 401) {
-          return { connected: false };
+          return { status: 401 };
         }
         const annotationsJson = await jsonOrNull<unknown[]>(annotationsResp);
         const chunk = Array.isArray(annotationsJson) ? annotationsJson : [];
@@ -530,13 +535,18 @@ export const getPullRequestContext = async (
           });
         });
         if (chunk.length < 50) {
-          break;
+          stopPaging = true;
         }
       }
 
       if (annotations.length > 0) {
         annotationsByRunId.set(runId, annotations);
       }
+      return { status: 200 };
+    }));
+
+    if (annotationsFetchResults.some((r) => r.status === 401)) {
+      return { connected: false };
     }
 
     for (const run of checkRuns) {
