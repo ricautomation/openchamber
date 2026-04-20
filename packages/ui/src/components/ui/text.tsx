@@ -1,5 +1,7 @@
 import * as React from "react";
 import { motion, type MotionProps } from "motion/react";
+import * as Slot from "@radix-ui/react-slot";
+
 import { cn } from "@/lib/utils";
 
 type Variant = {
@@ -217,5 +219,9 @@ export function Text({ variant = "shine", className, ...props }: TextProps) {
 
   const Component = variantComponent || variants[FALLBACK_INDEX].component;
 
-  return <Component {...props} className={className} />;
+  return (
+    <Slot.Root>
+      <Component {...props} className={className} />
+    </Slot.Root>
+  );
 }

@@ -116,8 +116,7 @@ function isPageAvailable(page: SettingsPageMeta, ctx: SettingsRuntimeContext): b
   return page.isAvailable(ctx);
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
-export function getSettingsNavIcon(slug: SettingsPageSlug): React.ComponentType<{ className?: string }> | null {
+function getSettingsNavIcon(slug: SettingsPageSlug): React.ComponentType<{ className?: string }> | null {
   switch (slug) {
     case 'projects':
       return RiFoldersLine;

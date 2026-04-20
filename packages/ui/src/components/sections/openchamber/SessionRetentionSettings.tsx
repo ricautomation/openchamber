@@ -5,6 +5,7 @@ import { toast } from '@/components/ui';
 import { NumberInput } from '@/components/ui/number-input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/useUIStore';
 import { useSessionAutoCleanup } from '@/hooks/useSessionAutoCleanup';
 
@@ -123,10 +124,14 @@ export const SessionRetentionSettings: React.FC = () => {
               <Button
                 key={option.value}
                 type="button"
-                variant="chip"
+                variant="outline"
                 size="xs"
-                aria-pressed={sessionRetentionAction === option.value}
-                className="!font-normal"
+                className={cn(
+                  '!font-normal',
+                  sessionRetentionAction === option.value
+                    ? 'border-[var(--primary-base)] text-[var(--primary-base)] bg-[var(--primary-base)]/10 hover:text-[var(--primary-base)]'
+                    : 'text-foreground'
+                )}
                 onClick={() => setSessionRetentionAction(option.value)}
               >
                 {option.label}

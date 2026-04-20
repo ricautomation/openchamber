@@ -216,7 +216,7 @@ const FileSelector = React.memo<FileSelectorProps>(({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <button className="flex h-7 items-center gap-2 rounded-lg border border-input bg-transparent px-2 typography-ui-label text-foreground outline-none hover:bg-interactive-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                <button className="flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-2 typography-ui-label text-foreground outline-none hover:bg-interactive-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
                     {selectedFileEntry ? (
                         <div className="flex min-w-0 items-center gap-3">
                             <FileTypeIcon filePath={selectedFileEntry.path} className="h-3.5 w-3.5 flex-shrink-0" />
@@ -288,23 +288,28 @@ const DiffViewModeSelector = React.memo<DiffViewModeSelectorProps>(({ mode, onMo
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <button className="flex h-7 items-center gap-2 rounded-lg border border-input bg-transparent px-2 typography-ui-label text-foreground outline-none hover:bg-interactive-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                <button className="flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-2 typography-ui-label text-foreground outline-none hover:bg-interactive-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
                     <span className="min-w-0 truncate typography-meta">
                         {currentOption.label}
                     </span>
                     <RiArrowDownSLine className="size-4 opacity-50" />
                 </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="min-w-[140px]">
+            <DropdownMenuContent className="min-w-[220px]">
                 <DropdownMenuRadioGroup
                     value={mode}
                     onValueChange={(value) => onModeChange(value as DiffTabViewMode)}
                 >
                     {DIFF_VIEW_MODE_OPTIONS.map((option) => (
                         <DropdownMenuRadioItem key={option.value} value={option.value}>
-                            <span className="typography-meta text-foreground">
-                                {option.label}
-                            </span>
+                            <div className="flex flex-col gap-0.5">
+                                <span className="typography-meta text-foreground">
+                                    {option.label}
+                                </span>
+                                <span className="typography-micro text-muted-foreground">
+                                    {option.description}
+                                </span>
+                            </div>
                         </DropdownMenuRadioItem>
                     ))}
                 </DropdownMenuRadioGroup>
@@ -577,14 +582,7 @@ const SingleDiffViewer = React.memo<SingleDiffViewerProps>(({
     }
 
     return (
-        <ScrollableOverlay
-            outerClassName="absolute inset-0"
-            disableHorizontal={false}
-            observeMutations={false}
-            preventOverscroll
-            data-diff-virtual-root
-            data-diff-virtual-content
-        >
+        <div className="absolute inset-0" style={{ contain: 'size layout' }}>
             <PierreDiffViewer
                 original={diff.original}
                 modified={diff.modified}
@@ -592,9 +590,8 @@ const SingleDiffViewer = React.memo<SingleDiffViewerProps>(({
                 fileName={filePath}
                 renderSideBySide={renderSideBySide}
                 wrapLines={wrapLines}
-                layout="inline"
             />
-        </ScrollableOverlay>
+        </div>
     );
 });
 

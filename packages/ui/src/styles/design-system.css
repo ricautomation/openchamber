@@ -194,12 +194,10 @@
 }
 
 @theme inline {
-  --radius-none: 0;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.625rem;
-  --radius-xl: 0.75rem;
-  --radius-full: 9999px;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 
   /* Override Tailwind spacing scale with custom properties that respect --padding-scale */
   --spacing-0: 0;

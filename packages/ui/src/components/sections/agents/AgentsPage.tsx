@@ -684,29 +684,41 @@ export const AgentsPage: React.FC = () => {
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
                 <Button
-                  variant="chip"
+                  variant="outline"
                   size="xs"
-                  aria-pressed={mode === 'primary'}
                   onClick={() => setMode('primary')}
-                  className="!font-normal"
+                  className={cn(
+                    '!font-normal',
+                    mode === 'primary'
+                      ? 'border-[var(--primary-base)] text-[var(--primary-base)] bg-[var(--primary-base)]/10 hover:text-[var(--primary-base)]'
+                      : 'text-foreground'
+                  )}
                 >
                   Primary
                 </Button>
                 <Button
-                  variant="chip"
+                  variant="outline"
                   size="xs"
-                  aria-pressed={mode === 'subagent'}
                   onClick={() => setMode('subagent')}
-                  className="!font-normal"
+                  className={cn(
+                    '!font-normal',
+                    mode === 'subagent'
+                      ? 'border-[var(--primary-base)] text-[var(--primary-base)] bg-[var(--primary-base)]/10 hover:text-[var(--primary-base)]'
+                      : 'text-foreground'
+                  )}
                 >
                   Subagent
                 </Button>
                 <Button
-                  variant="chip"
+                  variant="outline"
                   size="xs"
-                  aria-pressed={mode === 'all'}
                   onClick={() => setMode('all')}
-                  className="!font-normal"
+                  className={cn(
+                    '!font-normal',
+                    mode === 'all'
+                      ? 'border-[var(--primary-base)] text-[var(--primary-base)] bg-[var(--primary-base)]/10 hover:text-[var(--primary-base)]'
+                      : 'text-foreground'
+                  )}
                 >
                   All
                 </Button>

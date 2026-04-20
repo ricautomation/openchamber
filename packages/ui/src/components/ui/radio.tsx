@@ -1,4 +1,5 @@
 import React from 'react';
+import { RiRadioButtonFill, RiRadioButtonLine } from '@remixicon/react';
 import { cn } from '@/lib/utils';
 
 interface RadioProps {
@@ -51,26 +52,18 @@ export const Radio = React.memo<RadioProps>(function Radio({
       aria-checked={checked}
       aria-label={ariaLabel}
       className={cn(
-        'group/radio relative flex h-[14px] w-[14px] min-h-[14px] min-w-[14px] shrink-0 self-center items-center justify-center rounded-full outline-none',
-        'transition-[background-color,box-shadow] duration-200 ease-out',
-        // fill driven from props so first paint is correct
-        checked
-          ? 'bg-[color-mix(in_srgb,var(--primary-base)_80%,transparent)] shadow-none hover:bg-[var(--primary-base)]'
-          : 'bg-[var(--surface-muted)] shadow-[inset_0_0_0_1px_var(--interactive-border)] hover:bg-[var(--interactive-hover)]',
-        'focus-visible:ring-2 focus-visible:ring-[var(--interactive-focus-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-background',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        className,
+        'flex size-5 shrink-0 items-center justify-center rounded',
+        'text-muted-foreground hover:text-foreground',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        disabled && 'cursor-not-allowed opacity-50',
+        className
       )}
     >
       {checked ? (
-        <span
-          aria-hidden
-          className={cn(
-            'block h-[5px] w-[5px] rounded-full bg-white',
-            iconClassName,
-          )}
-        />
-      ) : null}
+        <RiRadioButtonFill className={cn('size-4 text-primary', iconClassName)} />
+      ) : (
+        <RiRadioButtonLine className={cn('size-4', iconClassName)} />
+      )}
     </button>
   );
 });

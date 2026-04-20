@@ -248,6 +248,14 @@ export interface Theme {
       mono?: string;
       heading?: string;
     };
+    radius?: {
+      none?: string;
+      sm?: string;
+      md?: string;
+      lg?: string;
+      xl?: string;
+      full?: string;
+    };
     spacing?: {
       xs?: string;
       sm?: string;

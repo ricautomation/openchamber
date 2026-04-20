@@ -352,17 +352,25 @@ export const GitIdentityEditorDialog: React.FC<GitIdentityEditorDialogProps> = (
                     <div className="flex items-center gap-1">
                       <Button size="sm"
                         type="button"
-                        variant="chip"
-                        aria-pressed={authType === 'ssh'}
+                        variant="outline"
                         onClick={() => setAuthType('ssh')}
+                        className={cn(
+                          authType === 'ssh'
+                            ? 'border-[var(--primary-base)] text-[var(--primary-base)] bg-[var(--primary-base)]/10 hover:text-[var(--primary-base)]'
+                            : 'text-foreground'
+                        )}
                       >
                         <RiLock2Line className="w-3.5 h-3.5 mr-1" /> SSH
                       </Button>
                       <Button size="sm"
                         type="button"
-                        variant="chip"
-                        aria-pressed={authType === 'token'}
+                        variant="outline"
                         onClick={() => setAuthType('token')}
+                        className={cn(
+                          authType === 'token'
+                            ? 'border-[var(--primary-base)] text-[var(--primary-base)] bg-[var(--primary-base)]/10 hover:text-[var(--primary-base)]'
+                            : 'text-foreground'
+                        )}
                       >
                         <RiKeyLine className="w-3.5 h-3.5 mr-1" /> Token
                       </Button>

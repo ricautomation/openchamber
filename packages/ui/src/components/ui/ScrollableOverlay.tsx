@@ -17,8 +17,6 @@ type ScrollableOverlayProps = React.HTMLAttributes<HTMLElement> & {
   preventOverscroll?: boolean;
   useScrollShadow?: boolean;
   scrollShadowSize?: number;
-  /** Forwarded to the inner element (e.g. textarea). */
-  disabled?: boolean;
 };
 
 export const ScrollableOverlay = React.forwardRef<HTMLElement, ScrollableOverlayProps>(

@@ -96,7 +96,11 @@ export class CSSVariableGenerator {
 
     vars.push(`  --ring: ${theme.colors.interactive.focusRing} !important;`);
 
-const sidebarBaseRgb = hexToRgb(theme.colors.surface.muted);
+    if (theme.config?.radius?.md) {
+      vars.push(`  --radius: ${theme.config.radius.md} !important;`);
+    }
+
+    const sidebarBaseRgb = hexToRgb(theme.colors.surface.muted);
     const sidebarAccentRgb = hexToRgb(theme.colors.surface.subtle);
     const sidebarBorderRgb = hexToRgb(theme.colors.interactive.border);
 
@@ -512,6 +516,15 @@ const sidebarBaseRgb = hexToRgb(theme.colors.surface.muted);
         vars.push(`  --font-family-mono: ${config.fonts.mono};`);
       }
       if (config.fonts.heading) vars.push(`  --font-heading: ${config.fonts.heading};`);
+    }
+
+    if (config.radius) {
+      if (config.radius.none) vars.push(`  --radius-none: ${config.radius.none};`);
+      if (config.radius.sm) vars.push(`  --radius-sm: ${config.radius.sm};`);
+      if (config.radius.md) vars.push(`  --radius-md: ${config.radius.md};`);
+      if (config.radius.lg) vars.push(`  --radius-lg: ${config.radius.lg};`);
+      if (config.radius.xl) vars.push(`  --radius-xl: ${config.radius.xl};`);
+      if (config.radius.full) vars.push(`  --radius-full: ${config.radius.full};`);
     }
 
     if (config.transitions) {

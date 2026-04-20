@@ -1,7 +1,6 @@
 import React from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { RiArrowDownSLine, RiArrowRightSLine, RiCheckboxBlankLine, RiCheckboxLine, RiSubtractLine } from '@remixicon/react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -445,22 +444,26 @@ export const ChangesSection: React.FC<ChangesSectionProps> = ({
           <div className="flex min-w-0 items-center gap-2">
             <h3 className="typography-ui-header font-semibold text-foreground">Changes</h3>
             {totalCount > 0 ? (
-              <div
+              <button
+                type="button"
+                onClick={areAllSelected ? onClearSelection : onSelectAll}
+                disabled={isRevertingAll}
+                aria-checked={isPartiallySelected ? 'mixed' : hasAnySelected}
+                aria-label={areAllSelected ? 'Clear file selection' : 'Select all files'}
                 className={cn(
-                  'inline-flex h-6 items-center gap-1 rounded px-1.5',
+                  'inline-flex h-6 items-center gap-1 rounded px-1.5 text-muted-foreground',
+                  'hover:bg-interactive-hover/55 hover:text-foreground',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                   isRevertingAll && 'cursor-not-allowed opacity-50'
                 )}
               >
-                <Checkbox
-                  size="sm"
-                  checked={hasAnySelected}
-                  indeterminate={isPartiallySelected}
-                  disabled={isRevertingAll}
-                  onChange={() => (areAllSelected ? onClearSelection() : onSelectAll())}
-                  ariaLabel={areAllSelected ? 'Clear file selection' : 'Select all files'}
-                />
+                {hasAnySelected ? (
+                  <RiCheckboxLine className={cn('size-4', isPartiallySelected ? 'text-primary/50' : 'text-primary')} />
+                ) : (
+                  <RiCheckboxBlankLine className="size-4" />
+                )}
                 <span className="typography-meta text-muted-foreground">{selectedCount}/{totalCount}</span>
-              </div>
+              </button>
             ) : null}
           </div>
           <div className="flex items-center gap-2 pr-1">
