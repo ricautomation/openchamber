@@ -10,6 +10,7 @@ import { registerProjectIconRoutes } from './project-icon-routes.js';
 import { registerScheduledTaskRoutes } from '../scheduled-tasks/routes.js';
 import { registerSkillRoutes } from './skill-routes.js';
 import { registerOpenCodeRoutes } from './routes.js';
+import { createCompletionHooksRouter } from '../completion-hooks/routes.js';
 
 export const createFeatureRoutesRuntime = (dependencies) => {
   const {
@@ -58,6 +59,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       scheduledTasksRuntime,
       getOpenChamberEventClients,
       writeSseEvent,
+      pinState,
     } = routeDependencies;
 
     const { getProviderSources, removeProviderConfig } = await import('./index.js');
@@ -234,6 +236,12 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       resolveGitBinaryForSpawn,
       openchamberUserConfigRoot,
     });
+
+    // Pin-to-repeat completion hooks API
+    if (pinState) {
+      const completionHooksRouter = createCompletionHooksRouter({ pinState });
+      app.use('/api/session', completionHooksRouter);
+    }
   };
 
   return {
