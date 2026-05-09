@@ -17,6 +17,7 @@ import { generateSyntaxTheme } from '@/lib/theme/syntaxThemeGenerator';
 import { cn } from '@/lib/utils';
 
 import type { AnimationHandlers, ContentChangeReason } from '@/hooks/useChatScrollManager';
+import { useCurrentSessionPinState } from '@/hooks/usePinState';
 import MessageHeader from './message/MessageHeader';
 import MessageBody from './message/MessageBody';
 import type { AgentMentionInfo } from './message/types';
@@ -775,6 +776,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         forkFromMessage(sessionId, message.info.id);
     }, [sessionId, message.info.id, forkFromMessage]);
 
+    // Pin state for current session
+    const { isPinned, remainingRepeats, setPin, clearPin } = useCurrentSessionPinState();
+
+    const handlePin = React.useCallback((messageId: string, promptText: string, repeatCount: number) => {
+        if (!sessionId) return;
+        if (repeatCount === 0 || !promptText) {
+            void clearPin();
+        } else {
+            void setPin(messageId, promptText, repeatCount);
+        }
+    }, [sessionId, setPin, clearPin]);
+
     const handleToggleTool = React.useCallback((toolId: string) => {
         const isDefaultOpen = defaultOpenToolIds.has(toolId);
         const isCurrentlyExpanded = effectiveExpandedTools.has(toolId);
@@ -1051,6 +1064,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                                 agentMention={agentMention}
                                                 onRevert={handleRevert}
                                                 onFork={isUser ? handleFork : undefined}
+                                                onPin={isUser ? handlePin : undefined}
+                                                isPinned={isUser ? isPinned : undefined}
+                                                pinRepeatCount={isUser ? remainingRepeats : undefined}
                                                 errorMessage={assistantErrorText}
                                                 errorVariant={assistantErrorVariant}
                                                 userActionsMode={useExternalUserActionsRow ? 'external-content' : 'inline'}
@@ -1085,6 +1101,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                                 agentMention={agentMention}
                                                 onRevert={handleRevert}
                                                 onFork={isUser ? handleFork : undefined}
+                                                onPin={isUser ? handlePin : undefined}
+                                                isPinned={isUser ? isPinned : undefined}
+                                                pinRepeatCount={isUser ? remainingRepeats : undefined}
                                                 errorMessage={assistantErrorText}
                                                 errorVariant={assistantErrorVariant}
                                                 userActionsMode="external-actions"

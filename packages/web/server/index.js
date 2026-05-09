@@ -580,6 +580,15 @@ const buildOpenCodeUrl = (...args) => openCodeNetworkRuntime.buildOpenCodeUrl(..
 const ensureOpenCodeApiPrefix = (...args) => openCodeNetworkRuntime.ensureOpenCodeApiPrefix(...args);
 const scheduleOpenCodeApiDetection = (...args) => openCodeNetworkRuntime.scheduleOpenCodeApiDetection(...args);
 
+// Bootstrap completion hooks now that buildOpenCodeUrl and getOpenCodeAuthHeaders are defined
+const { createCompletionHooks } = await import('./lib/completion-hooks/index.js');
+const { registry: completionHookRegistry, pinState } = createCompletionHooks({
+  buildOpenCodeUrl,
+  getOpenCodeAuthHeaders,
+});
+// Wire the registry into the session runtime (created earlier with null registry)
+sessionRuntime.setCompletionHookRegistry(completionHookRegistry);
+
 const ENV_CONFIGURED_API_PREFIX = normalizeApiPrefix(
   process.env.OPENCODE_API_PREFIX || process.env.OPENCHAMBER_API_PREFIX || ''
 );
@@ -1200,6 +1209,7 @@ async function main(options = {}) {
     scheduledTasksRuntime,
     getOpenChamberEventClients: () => uiOpenChamberEventClients,
     writeSseEvent,
+    pinState,
   });
 
   const previewProxyRuntime = createPreviewProxyRuntime({

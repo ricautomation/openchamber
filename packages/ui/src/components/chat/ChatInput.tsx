@@ -14,6 +14,8 @@ import {
     RiShieldUserLine,
     RiGithubLine,
     RiSendPlane2Line,
+    RiPushpinLine,
+    RiPushpinFill,
 } from '@remixicon/react';
 import { BrowserVoiceButton } from '@/components/voice';
 // sessionStore removed — currentSessionId comes from useSessionUIStore
@@ -44,6 +46,7 @@ import { MobileAgentButton } from './MobileAgentButton';
 import { MobileModelButton } from './MobileModelButton';
 import { MobileSessionStatusBar } from './MobileSessionStatusBar';
 import { useCurrentSessionActivity } from '@/hooks/useSessionActivity';
+import { useCurrentSessionPinState } from '@/hooks/usePinState';
 import { toast } from '@/components/ui';
 // useMessageStore removed — messages now come from sync system
 import { isTauriShell, isVSCodeRuntime } from '@/lib/desktop';
@@ -701,6 +704,173 @@ const loadConfirmedMentions = (sessionId: string | null): Set<string> => {
     return new Set();
 };
 
+type PinRepeatButtonProps = {
+    footerIconButtonClass: string;
+    iconSizeClass: string;
+    currentSessionId: string | null;
+    inputText: string;
+    isInputEmpty: boolean;
+    onPinLocked: (pinText: string, repeatCount: number) => void;
+    onPinCleared: () => void;
+    onRepeatCountChange: (delta: number) => void;
+    isPinLocked: boolean;
+    lockedRepeatCount: number;
+    lockedRepeatRemaining: number;
+};
+
+const PinRepeatButton = React.memo(function PinRepeatButton(props: PinRepeatButtonProps) {
+    const {
+        footerIconButtonClass,
+        iconSizeClass,
+        currentSessionId,
+        inputText,
+        isInputEmpty,
+        onPinLocked,
+        onPinCleared,
+        onRepeatCountChange,
+        isPinLocked,
+        lockedRepeatCount,
+        lockedRepeatRemaining,
+    } = props;
+    const [showPopover, setShowPopover] = React.useState(false);
+    const [localRepeatCount, setLocalRepeatCount] = React.useState(3);
+
+    if (!currentSessionId) {
+        return null;
+    }
+
+    const handlePinClick = () => {
+        if (isPinLocked) {
+            onPinCleared();
+        } else if (!isInputEmpty) {
+            setShowPopover(true);
+        }
+    };
+
+    const handleSetPin = () => {
+        onPinLocked(inputText, localRepeatCount);
+        setShowPopover(false);
+    };
+
+    const handleIncrement = () => {
+        if (lockedRepeatCount < 20) {
+            onRepeatCountChange(1);
+        }
+    };
+
+    const handleDecrement = () => {
+        if (lockedRepeatCount > 1) {
+            onRepeatCountChange(-1);
+        }
+    };
+
+    return (
+        <div className="relative flex items-center gap-2">
+            {/* Pin indicator when locked */}
+            {isPinLocked && (
+                <div className="flex items-center gap-1.5">
+                    <button
+                        type="button"
+                        onClick={handleDecrement}
+                        className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-[var(--interactive-hover)]/40 transition-colors"
+                        aria-label="Decrease repeat count"
+                    >
+                        <span className="text-sm font-mono">−</span>
+                    </button>
+                    <div className="flex items-center gap-1">
+                        <RiPushpinFill className="h-3 w-3 text-[color:var(--status-success)]" />
+                        <span className="text-xs font-mono text-[color:var(--status-success)] tabular-nums min-w-[2ch] text-center">
+                            {lockedRepeatRemaining}
+                        </span>
+                        <span className="text-xs text-muted-foreground">/</span>
+                        <span className="text-xs text-muted-foreground font-mono tabular-nums">{lockedRepeatCount}</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleIncrement}
+                        className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-[var(--interactive-hover)]/40 transition-colors"
+                        aria-label="Increase repeat count"
+                    >
+                        <span className="text-sm font-mono">+</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Pin button */}
+            <Tooltip delayDuration={600}>
+                <TooltipTrigger asChild>
+                    <button
+                        type="button"
+                        className={cn(
+                            footerIconButtonClass,
+                            'rounded-md',
+                            isPinLocked
+                                ? 'text-[color:var(--status-success)]'
+                                : isInputEmpty
+                                    ? 'opacity-30 cursor-not-allowed'
+                                    : 'text-foreground hover:bg-[var(--interactive-hover)]/40'
+                        )}
+                        onMouseDown={(event) => {
+                            event.preventDefault();
+                        }}
+                        onClick={handlePinClick}
+                        aria-label={isPinLocked ? 'Unpin and stop repeat' : 'Pin to repeat'}
+                        disabled={!isPinLocked && isInputEmpty}
+                    >
+                        {isPinLocked ? (
+                            <RiPushpinFill className={cn(iconSizeClass)} />
+                        ) : (
+                            <RiPushpinLine className={cn(iconSizeClass)} />
+                        )}
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                    {isPinLocked ? 'Stop repeat' : 'Pin to repeat'}
+                </TooltipContent>
+            </Tooltip>
+
+            {/* Pin popover for setting repeat count */}
+            {showPopover && (
+                <div
+                    className="absolute right-0 bottom-full mb-2 z-50 w-48 p-3 rounded-lg border bg-background shadow-md"
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">Repeat prompt</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Times:</span>
+                            <input
+                                type="number"
+                                min={1}
+                                max={20}
+                                value={localRepeatCount}
+                                onChange={(e) => setLocalRepeatCount(Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1)))}
+                                className="w-16 h-7 px-2 text-sm border rounded bg-background"
+                            />
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                            <button
+                                type="button"
+                                className="px-3 py-1 text-sm rounded hover:bg-accent"
+                                onClick={() => setShowPopover(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="px-3 py-1 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/90"
+                                onClick={handleSetPin}
+                            >
+                                Pin
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+});
+
 const ChatInputComponent: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBottom }) => {
     const { t } = useI18n();
     // Track if we restored a draft on mount (for text selection)
@@ -1213,6 +1383,22 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({ onOpenSettings, scrollTo
 
     // Session activity for queue availability and controls
     const { phase: sessionPhase } = useCurrentSessionActivity();
+
+    // Pin-to-repeat state
+    const { pinState, isPinned, remainingRepeats, setPin, clearPin } = useCurrentSessionPinState();
+    const handlePinLocked = React.useCallback((pinText: string, repeatCount: number) => {
+        if (!currentSessionId) return;
+        // Use a placeholder message ID — the server stores it but the hook only needs promptText
+        void setPin(`pin-${Date.now()}`, pinText, repeatCount);
+    }, [currentSessionId, setPin]);
+    const handlePinCleared = React.useCallback(() => {
+        void clearPin();
+    }, [clearPin]);
+    const handleRepeatCountChange = React.useCallback((delta: number) => {
+        if (!currentSessionId || !pinState) return;
+        const next = Math.max(1, Math.min(20, pinState.repeatCount + delta));
+        void setPin(pinState.messageId, pinState.promptText, next);
+    }, [currentSessionId, pinState, setPin]);
 
     const handleOpenMobilePanel = React.useCallback((panel: MobileControlsPanel) => {
         if (!isMobile) {
@@ -3833,6 +4019,19 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({ onOpenSettings, scrollTo
                                             />
                                         </div>
                                         <div className="flex items-center gap-x-1 flex-shrink-0">
+                                            <PinRepeatButton
+                                                footerIconButtonClass={footerIconButtonClass}
+                                                iconSizeClass={iconSizeClass}
+                                                currentSessionId={currentSessionId}
+                                                inputText={message}
+                                                isInputEmpty={!message.trim()}
+                                                onPinLocked={handlePinLocked}
+                                                onPinCleared={handlePinCleared}
+                                                onRepeatCountChange={handleRepeatCountChange}
+                                                isPinLocked={isPinned}
+                                                lockedRepeatCount={pinState?.repeatCount ?? 0}
+                                                lockedRepeatRemaining={remainingRepeats}
+                                            />
                                             <MemoBrowserVoiceButton />
                                             <ComposerActionButtons
                                                 isMobile={isMobile}
@@ -3890,6 +4089,19 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({ onOpenSettings, scrollTo
                                 </div>
                                 <div className={cn('flex items-center flex-1 justify-end', footerGapClass, 'md:gap-x-3')}>
                                     <MemoModelControls className={cn('flex-1 min-w-0 justify-end')} />
+                                    <PinRepeatButton
+                                        footerIconButtonClass={footerIconButtonClass}
+                                        iconSizeClass={iconSizeClass}
+                                        currentSessionId={currentSessionId}
+                                        inputText={message}
+                                        isInputEmpty={!message.trim()}
+                                        onPinLocked={handlePinLocked}
+                                        onPinCleared={handlePinCleared}
+                                        onRepeatCountChange={handleRepeatCountChange}
+                                        isPinLocked={isPinned}
+                                        lockedRepeatCount={pinState?.repeatCount ?? 0}
+                                        lockedRepeatRemaining={remainingRepeats}
+                                    />
                                     <MemoBrowserVoiceButton />
                                     <ComposerActionButtons
                                         isMobile={isMobile}

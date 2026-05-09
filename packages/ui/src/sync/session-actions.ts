@@ -724,3 +724,51 @@ export async function forkFromMessage(sessionId: string, messageId: string): Pro
     })
   }
 }
+
+/**
+ * Set a pin on a message for repeat execution.
+ * Calls the OpenChamber completion hooks API to register the pin.
+ *
+ * @param sessionId - The session this message belongs to
+ * @param messageId - The message ID to pin
+ * @param promptText - The full text of the prompt to repeat
+ * @param repeatCount - Number of times to repeat (1-20)
+ */
+export async function setMessagePin(
+  sessionId: string,
+  messageId: string,
+  promptText: string,
+  repeatCount: number,
+): Promise<void> {
+  const baseUrl = opencodeClient.getBaseUrl()
+  const url = `${baseUrl}/session/${encodeURIComponent(sessionId)}/pin`
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messageId, promptText, repeatCount }),
+  })
+
+  if (!response.ok) {
+    const error = await response.text().catch(() => 'Unknown error')
+    throw new Error(`Failed to set pin: ${response.status} ${error}`)
+  }
+}
+
+/**
+ * Clear the pin on a message.
+ * Calls the OpenChamber completion hooks API to remove the pin.
+ *
+ * @param sessionId - The session to clear the pin from
+ */
+export async function clearMessagePin(sessionId: string): Promise<void> {
+  const baseUrl = opencodeClient.getBaseUrl()
+  const url = `${baseUrl}/session/${encodeURIComponent(sessionId)}/pin`
+
+  const response = await fetch(url, { method: 'DELETE' })
+
+  if (!response.ok) {
+    const error = await response.text().catch(() => 'Unknown error')
+    throw new Error(`Failed to clear pin: ${response.status} ${error}`)
+  }
+}

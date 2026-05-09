@@ -16,7 +16,7 @@ import { FadeInOnReveal } from './FadeInOnReveal';
 import { Button } from '@/components/ui/button';
 import { SaveProjectPlanDialog } from '@/components/session/SaveProjectPlanDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { RiCheckLine, RiFileCopyLine, RiChatNewLine, RiArrowGoBackLine, RiGitBranchLine, RiHourglassLine, RiTimeLine, RiVolumeUpLine, RiStopLine, RiImageDownloadLine, RiLoader4Line, RiErrorWarningLine, RiBookletLine, RiGlobalLine, RiInformationLine } from '@remixicon/react';
+import { RiCheckLine, RiFileCopyLine, RiChatNewLine, RiArrowGoBackLine, RiGitBranchLine, RiHourglassLine, RiTimeLine, RiVolumeUpLine, RiStopLine, RiImageDownloadLine, RiLoader4Line, RiErrorWarningLine, RiBookletLine, RiGlobalLine, RiInformationLine, RiPushpinLine, RiPushpinFill } from '@remixicon/react';
 import { ArrowsMerge } from '@/components/icons/ArrowsMerge';
 import type { ContentChangeReason } from '@/hooks/useChatScrollManager';
 
@@ -304,6 +304,9 @@ interface MessageBodyProps {
     turnGroupingContext?: TurnGroupingContext;
     onRevert?: () => void;
     onFork?: () => void;
+    onPin?: (messageId: string, promptText: string, repeatCount: number) => void;
+    isPinned?: boolean;
+    pinRepeatCount?: number;
     errorMessage?: string;
     errorVariant?: 'error' | 'info';
     userActionsMode?: 'inline' | 'external-content' | 'external-actions';
@@ -328,7 +331,7 @@ const writeRevealedToolIds = (messageId: string, value: Set<string>): void => {
     revealedToolIdsByMessage.set(messageId, new Set(value));
 };
 
-const UserMessageBody = React.memo(({ messageId, parts, isMobile, alwaysShowActions = isMobile, hasTouchInput, hasTextContent, onCopyMessage, copiedMessage, onShowPopup, agentMention, onRevert, onFork, userActionsMode = 'inline', stickyUserHeaderEnabled = true }: {
+const UserMessageBody = React.memo(({ messageId, parts, isMobile, alwaysShowActions = isMobile, hasTouchInput, hasTextContent, onCopyMessage, copiedMessage, onShowPopup, agentMention, onRevert, onFork, onPin, isPinned, pinRepeatCount, userActionsMode = 'inline', stickyUserHeaderEnabled = true }: {
     messageId: string;
     parts: Part[];
     isMobile: boolean;
@@ -341,6 +344,9 @@ const UserMessageBody = React.memo(({ messageId, parts, isMobile, alwaysShowActi
     agentMention?: AgentMentionInfo;
     onRevert?: () => void;
     onFork?: () => void;
+    onPin?: (messageId: string, promptText: string, repeatCount: number) => void;
+    isPinned?: boolean;
+    pinRepeatCount?: number;
     userActionsMode?: 'inline' | 'external-content' | 'external-actions';
     stickyUserHeaderEnabled?: boolean;
 }) => {
@@ -348,6 +354,9 @@ const UserMessageBody = React.memo(({ messageId, parts, isMobile, alwaysShowActi
     const chatSurfaceMode = useChatSurfaceMode();
     const [copyHintVisible, setCopyHintVisible] = React.useState(false);
     const copyHintTimeoutRef = React.useRef<number | null>(null);
+    const [showPinPopover, setShowPinPopover] = React.useState(false);
+    const [localPinRepeatCount, setLocalPinRepeatCount] = React.useState(3);
+    const pinInputRef = React.useRef<HTMLInputElement>(null);
 
     const userContentParts = React.useMemo(() => {
         return parts.filter((part) => {
@@ -371,6 +380,7 @@ const UserMessageBody = React.memo(({ messageId, parts, isMobile, alwaysShowActi
     const isMessageCopied = Boolean(copiedMessage);
     const isTouchContext = Boolean(hasTouchInput ?? isMobile);
     const hasCopyableText = Boolean(hasTextContent);
+    const canPin = Boolean(onPin);
     const showUserContent = userActionsMode !== 'external-actions';
     const showUserActions = userActionsMode !== 'external-content';
     const useStickyScrollableUserContent = stickyUserHeaderEnabled && userActionsMode === 'inline';
@@ -420,7 +430,7 @@ const UserMessageBody = React.memo(({ messageId, parts, isMobile, alwaysShowActi
     );
 
     const effectiveOnFork = chatSurfaceMode === 'mini-chat' ? undefined : onFork;
-    const actionsBlock = ((canCopyMessage && hasCopyableText) || onRevert || effectiveOnFork) && showUserActions ? (
+    const actionsBlock = ((canCopyMessage && hasCopyableText) || onRevert || effectiveOnFork || canPin) && showUserActions ? (
         <div className={cn(
             'group/user-actions',
             isMobile
@@ -489,6 +499,87 @@ const UserMessageBody = React.memo(({ messageId, parts, isMobile, alwaysShowActi
                         </TooltipTrigger>
                         <TooltipContent sideOffset={6}>{t('chat.messageBody.actions.fork')}</TooltipContent>
                     </Tooltip>
+                )}
+                {canPin && (
+                    <div className="relative">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                                'h-6 w-6 bg-transparent hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50',
+                                isPinned
+                                    ? 'text-[color:var(--status-success)]'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            )}
+                            aria-label={isPinned ? 'Unpin repeat' : 'Pin to repeat'}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                if (isPinned) {
+                                    onPin?.(messageId, '', 0);
+                                } else {
+                                    setShowPinPopover(!showPinPopover);
+                                }
+                            }}
+                        >
+                            {isPinned ? (
+                                <RiPushpinFill className="h-3 w-3" />
+                            ) : (
+                                <RiPushpinLine className="h-3 w-3" />
+                            )}
+                            {isPinned && (pinRepeatCount ?? 0) > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[color:var(--status-success)] text-[10px] text-white flex items-center justify-center">
+                                    {pinRepeatCount}
+                                </span>
+                            )}
+                        </Button>
+                        {showPinPopover && (
+                            <div
+                                className="absolute right-0 top-full mt-1 z-50 w-48 p-3 rounded-lg border bg-background shadow-md"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-sm font-medium">Repeat this prompt</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-muted-foreground">Times:</span>
+                                        <input
+                                            ref={pinInputRef}
+                                            type="number"
+                                            min={1}
+                                            max={20}
+                                            value={localPinRepeatCount}
+                                            onChange={(e) => setLocalPinRepeatCount(Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1)))}
+                                            className="w-16 h-7 px-2 text-sm border rounded bg-background"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2 justify-end">
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => setShowPinPopover(false)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                setShowPinPopover(false);
+                                                const textParts = parts.filter((p) => p.type === 'text');
+                                                const promptText = textParts
+                                                    .map((p) => (p as Record<string, unknown>).text as string || (p as Record<string, unknown>).content as string || '')
+                                                    .join('\n')
+                                                    .trim();
+                                                onPin?.(messageId, promptText, localPinRepeatCount);
+                                            }}
+                                        >
+                                            Pin
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 )}
                 {canCopyMessage && hasCopyableText && (
                     <Tooltip>
@@ -1912,6 +2003,9 @@ const MessageBody = React.memo(({ isUser, ...props }: MessageBodyProps) => {
                 agentMention={props.agentMention}
                 onRevert={props.onRevert}
                 onFork={props.onFork}
+                onPin={props.onPin}
+                isPinned={props.isPinned}
+                pinRepeatCount={props.pinRepeatCount}
                 userActionsMode={props.userActionsMode}
                 stickyUserHeaderEnabled={props.stickyUserHeaderEnabled}
             />

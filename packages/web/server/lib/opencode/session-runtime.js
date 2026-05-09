@@ -52,7 +52,8 @@ const deriveSessionActivityTransitions = (payload) => {
   return [];
 };
 
-export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, broadcastEvent }) => {
+export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, broadcastEvent, completionHookRegistry: initialCompletionHookRegistry = null }) => {
+  let completionHookRegistry = initialCompletionHookRegistry;
   const sessionActivityPhases = new Map();
   const sessionActivityCooldowns = new Map();
   const sessionStates = new Map();
@@ -141,6 +142,9 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
       return;
     }
 
+    // Track previous status for completion hook triggering
+    const prevStatus = existing?.status;
+
     sessionStates.set(sessionId, {
       status,
       lastUpdateAt: now,
@@ -179,6 +183,11 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
 
     const phase = status === 'busy' || status === 'retry' ? 'busy' : 'idle';
     setSessionActivityPhase(sessionId, phase);
+
+    // Execute completion hooks when session transitions from busy/retry to idle
+    if ((prevStatus === 'busy' || prevStatus === 'retry') && status === 'idle' && completionHookRegistry) {
+      completionHookRegistry.execute(sessionId, { status, metadata });
+    }
   };
 
   const getSessionStateSnapshot = () => {
@@ -337,6 +346,10 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
     sessionActivityCooldowns.clear();
   };
 
+  const setCompletionHookRegistry = (registry) => {
+    completionHookRegistry = registry;
+  };
+
   return {
     processOpenCodeSsePayload,
     getSessionActivitySnapshot,
@@ -348,6 +361,7 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
     markSessionUnviewed,
     markUserMessageSent,
     resetAllSessionActivityToIdle,
+    setCompletionHookRegistry,
     dispose,
   };
 };
